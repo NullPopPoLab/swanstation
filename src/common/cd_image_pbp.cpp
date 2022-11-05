@@ -20,7 +20,7 @@ using FileSystem::FTell64;
 class CDImagePBP final : public CDImage
 {
 public:
-  CDImagePBP() = default;
+  CDImagePBP(OpenFlags open_flags) : CDImage(open_flags) {}
   ~CDImagePBP() override;
 
   bool Open(const char* filename, Common::Error* error);
@@ -423,7 +423,36 @@ bool CDImagePBP::Open(const char* filename, Common::Error* error)
         break;
     }
 
-    if (m_disc_offsets.size() < 2)
+    // Multidisc games are stored inside the EBOOT.PBP file as:
+    //
+    // A)
+    // pstitleimg
+    // psisoimg
+    // psisoimg
+    // ...
+    //
+    // Single disk games can be stored in two different formats, with or
+    // without a pstitleimg section, i.e. as:
+    //
+    // B)
+    // pstitleimg
+    // psisoimg
+    //
+    // or:
+    //
+    // C)
+    // psisoimg
+    //
+    // (Files of type (B) are created by the pop-fe utility,
+    // https://github.com/sahlberg/pop-fe)
+    //
+    // Thus even though a 'multi-disc header' has been found, this may
+    // still be a single disk game. We therefore only flag an error if
+    // m_disc_offsets.size() is less than one.
+    //
+    // This PBP format analysis and error checking is the work of
+    // Ronnie Sahlberg <ronniesahlberg@gmail.com>, author of pop-fe.
+    if (m_disc_offsets.size() < 1)
     {
       Log_ErrorPrintf("Invalid number of discs (%u) in multi-disc PBP file", static_cast<u32>(m_disc_offsets.size()));
       return false;
@@ -898,9 +927,9 @@ std::string CDImagePBP::GetSubImageMetadata(u32 index, const std::string_view& t
   return CDImage::GetSubImageMetadata(index, type);
 }
 
-std::unique_ptr<CDImage> CDImage::OpenPBPImage(const char* filename, Common::Error* error)
+std::unique_ptr<CDImage> CDImage::OpenPBPImage(const char* filename, OpenFlags open_flags, Common::Error* error)
 {
-  std::unique_ptr<CDImagePBP> image = std::make_unique<CDImagePBP>();
+  std::unique_ptr<CDImagePBP> image = std::make_unique<CDImagePBP>(open_flags);
   if (!image->Open(filename, error))
     return {};
 

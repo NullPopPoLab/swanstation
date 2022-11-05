@@ -28,8 +28,6 @@ add_library(core
     digital_controller.h
     dma.cpp
     dma.h
-    gdb_protocol.cpp
-    gdb_protocol.h
     gpu.cpp
     gpu.h
     gpu_backend.cpp
@@ -117,16 +115,19 @@ set(RECOMPILER_SRCS
 target_include_directories(core PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/..")
 target_include_directories(core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
 target_link_libraries(core PUBLIC Threads::Threads common zlib vulkan-loader)
-target_link_libraries(core PRIVATE glad stb xxhash imgui)
-target_compile_definitions(core PUBLIC "-DWITH_IMGUI=1")
+target_link_libraries(core PRIVATE glad stb xxhash)
 
 if(WIN32)
   target_sources(core PRIVATE
-    gpu_hw_d3d12.cpp
-    gpu_hw_d3d12.h
     gpu_hw_d3d11.cpp
     gpu_hw_d3d11.h
   )
+  if(USE_D3D12)
+    target_sources(core PRIVATE
+      gpu_hw_d3d12.cpp
+      gpu_hw_d3d12.h
+    )
+  endif()
   target_link_libraries(core PRIVATE winmm.lib)
 endif()
 

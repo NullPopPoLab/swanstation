@@ -109,7 +109,6 @@ struct Settings
   std::string gpu_adapter;
   std::string display_post_process_chain;
   u32 gpu_resolution_scale = 1;
-  u32 gpu_resolution_soft_scale = 1;
   u32 gpu_multisamples = 1;
   bool gpu_use_thread = true;
   bool gpu_use_software_renderer_for_readbacks = false;
@@ -160,6 +159,7 @@ struct Settings
   u8 cdrom_readahead_sectors = DEFAULT_CDROM_READAHEAD_SECTORS;
   bool cdrom_region_check = false;
   bool cdrom_load_image_to_ram = false;
+  bool cdrom_precache_chd = false;
   bool cdrom_mute_cd_audio = false;
   u32 cdrom_read_speedup = 1;
   u32 cdrom_seek_speedup = 1;
@@ -184,9 +184,6 @@ struct Settings
     bool show_vram = false;
     bool dump_cpu_to_vram_copies = false;
     bool dump_vram_to_cpu_copies = false;
-
-    bool enable_gdb_server = false;
-    u16 gdb_server_port = 1234;
 
     // Mutable because the imgui window can close itself.
     mutable bool show_gpu_state = false;

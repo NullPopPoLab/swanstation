@@ -75,9 +75,6 @@ public:
 
   virtual GPURenderer GetRendererType() const = 0;
 
-
-  virtual u16* GetVRAMshadowPtr() = 0;
-
   virtual bool Initialize(HostDisplay* host_display);
   virtual void Reset(bool clear_vram);
   virtual bool DoState(StateWrapper& sw, HostDisplayTexture** save_to_texture, bool update_display);
@@ -156,8 +153,10 @@ public:
   // gpu_hw_d3d11.cpp
   static std::unique_ptr<GPU> CreateHardwareD3D11Renderer();
 
+#ifdef USE_D3D12
   // gpu_hw_d3d12.cpp
   static std::unique_ptr<GPU> CreateHardwareD3D12Renderer();
+#endif
 
   // gpu_hw_opengl.cpp
   static std::unique_ptr<GPU> CreateHardwareOpenGLRenderer();
@@ -328,7 +327,7 @@ protected:
   std::unique_ptr<TimingEvent> m_command_tick_event;
 
   // Pointer to VRAM, used for reads/writes. In the hardware backends, this is the shadow buffer.
-  //u16* m_vram_ptr = nullptr;
+  u16* m_vram_ptr = nullptr;
 
   union GPUSTAT
   {

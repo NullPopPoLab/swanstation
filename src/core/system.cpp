@@ -329,7 +329,7 @@ ConsoleRegion GetConsoleRegionForDiscRegion(DiscRegion region)
 
 std::string GetGameCodeForPath(const char* image_path, bool fallback_to_hash)
 {
-  std::unique_ptr<CDImage> cdi = CDImage::Open(image_path, nullptr);
+  std::unique_ptr<CDImage> cdi = CDImage::Open(image_path, CDImage::OpenFlags::None, nullptr);
   if (!cdi)
     return {};
 
@@ -615,7 +615,7 @@ std::optional<DiscRegion> GetRegionForPath(const char* image_path)
   else if (IsPsfFileName(image_path))
     return GetRegionForPsf(image_path);
 
-  std::unique_ptr<CDImage> cdi = CDImage::Open(image_path, nullptr);
+  std::unique_ptr<CDImage> cdi = CDImage::Open(image_path, CDImage::OpenFlags::None, nullptr);
   if (!cdi)
     return {};
 
@@ -662,13 +662,17 @@ bool RecreateGPU(GPURenderer renderer, bool update_display /* = true*/)
 
 std::unique_ptr<CDImage> OpenCDImage(const char* path, Common::Error* error, bool force_preload, bool check_for_patches)
 {
-  std::unique_ptr<CDImage> media = CDImage::Open(path, error);
+  CDImage::OpenFlags open_flags = CDImage::OpenFlags::None;
+  if (g_settings.cdrom_precache_chd && !g_settings.cdrom_load_image_to_ram)
+    open_flags |= CDImage::OpenFlags::PreCache;
+
+  std::unique_ptr<CDImage> media = CDImage::Open(path, open_flags, error);
   if (!media)
     return {};
 
   if (force_preload || g_settings.cdrom_load_image_to_ram)
   {
-    if (media->HasSubImages())
+    if (media->HasSubImages() && media->GetSubImageCount() > 1)
     {
       g_host_interface->AddFormattedOSDMessage(
         15.0f,
@@ -692,7 +696,7 @@ std::unique_ptr<CDImage> OpenCDImage(const char* path, Common::Error* error, boo
       path, FileSystem::ReplaceExtension(FileSystem::GetDisplayNameFromPath(path), "ppf")));
     if (FileSystem::FileExists(ppf_filename.c_str()))
     {
-      media = CDImage::OverlayPPFPatch(ppf_filename.c_str(), std::move(media));
+      media = CDImage::OverlayPPFPatch(ppf_filename.c_str(), CDImage::OpenFlags::None, std::move(media));
       if (!media)
       {
         g_host_interface->AddFormattedOSDMessage(
@@ -1027,9 +1031,11 @@ bool CreateGPU(GPURenderer renderer)
     case GPURenderer::HardwareD3D11:
       g_gpu = GPU::CreateHardwareD3D11Renderer();
       break;
+#ifdef USE_D3D12
     case GPURenderer::HardwareD3D12:
       g_gpu = GPU::CreateHardwareD3D12Renderer();
       break;
+#endif
 #endif
 
     case GPURenderer::Software:
@@ -2260,7 +2266,7 @@ void SetCheatList(std::unique_ptr<CheatList> cheats)
 void CalculateRewindMemoryUsage(u32 num_saves, u64* ram_usage, u64* vram_usage)
 {
   *ram_usage = MAX_SAVE_STATE_SIZE * static_cast<u64>(num_saves);
-  *vram_usage = (VRAM_WIDTH * VRAM_HEIGHT * 4) * static_cast<u64>(std::max((g_settings.gpu_renderer == GPURenderer::Software ? g_settings.gpu_resolution_soft_scale : g_settings.gpu_resolution_scale), 1u)) *
+  *vram_usage = (VRAM_WIDTH * VRAM_HEIGHT * 4) * static_cast<u64>(std::max(g_settings.gpu_resolution_scale, 1u)) *
                 static_cast<u64>(g_settings.gpu_multisamples) * static_cast<u64>(num_saves);
 }
 

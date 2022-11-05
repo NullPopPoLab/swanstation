@@ -183,7 +183,6 @@ void Settings::Load(SettingsInterface& si)
                    .value_or(DEFAULT_GPU_RENDERER);
   gpu_adapter = si.GetStringValue("GPU", "Adapter", "");
   gpu_resolution_scale = static_cast<u32>(si.GetIntValue("GPU", "ResolutionScale", 1));
-  gpu_resolution_soft_scale = static_cast<u32>(si.GetIntValue("GPU", "ResolutionSoftScale", 1));
   gpu_multisamples = static_cast<u32>(si.GetIntValue("GPU", "Multisamples", 1));
   gpu_use_debug_device = si.GetBoolValue("GPU", "UseDebugDevice", false);
   gpu_per_sample_shading = si.GetBoolValue("GPU", "PerSampleShading", false);
@@ -250,6 +249,7 @@ void Settings::Load(SettingsInterface& si)
   cdrom_readahead_sectors = static_cast<u8>(si.GetIntValue("CDROM", "ReadaheadSectors", DEFAULT_CDROM_READAHEAD_SECTORS));
   cdrom_region_check = si.GetBoolValue("CDROM", "RegionCheck", false);
   cdrom_load_image_to_ram = si.GetBoolValue("CDROM", "LoadImageToRAM", false);
+  cdrom_precache_chd = si.GetBoolValue("CDROM", "PreCacheCHD", false);
   cdrom_mute_cd_audio = si.GetBoolValue("CDROM", "MuteCDAudio", false);
   cdrom_read_speedup = si.GetIntValue("CDROM", "ReadSpeedup", 1);
   cdrom_seek_speedup = si.GetIntValue("CDROM", "SeekSpeedup", 1);
@@ -273,7 +273,6 @@ void Settings::Load(SettingsInterface& si)
   bios_patch_tty_enable = si.GetBoolValue("BIOS", "PatchTTYEnable", false);
   bios_patch_fast_boot = si.GetBoolValue("BIOS", "PatchFastBoot", DEFAULT_FAST_BOOT_VALUE);
 
-#ifndef LIBRETRO
   controller_types[0] =
     ParseControllerTypeName(
       si.GetStringValue("Controller1", "Type", GetControllerTypeName(DEFAULT_CONTROLLER_1_TYPE)).c_str())
@@ -287,7 +286,6 @@ void Settings::Load(SettingsInterface& si)
                                 .c_str())
         .value_or(DEFAULT_CONTROLLER_2_TYPE);
   }
-#endif
 
   memory_card_types[0] =
     ParseMemoryCardTypeName(
@@ -318,8 +316,6 @@ void Settings::Load(SettingsInterface& si)
   debugging.show_vram = si.GetBoolValue("Debug", "ShowVRAM");
   debugging.dump_cpu_to_vram_copies = si.GetBoolValue("Debug", "DumpCPUToVRAMCopies");
   debugging.dump_vram_to_cpu_copies = si.GetBoolValue("Debug", "DumpVRAMToCPUCopies");
-  debugging.enable_gdb_server = si.GetBoolValue("Debug", "EnableGDBServer");
-  debugging.gdb_server_port = static_cast<u16>(si.GetIntValue("Debug", "GDBServerPort"));
   debugging.show_gpu_state = si.GetBoolValue("Debug", "ShowGPUState");
   debugging.show_cdrom_state = si.GetBoolValue("Debug", "ShowCDROMState");
   debugging.show_spu_state = si.GetBoolValue("Debug", "ShowSPUState");
@@ -378,7 +374,6 @@ void Settings::Save(SettingsInterface& si) const
   si.SetStringValue("GPU", "Renderer", GetRendererName(gpu_renderer));
   si.SetStringValue("GPU", "Adapter", gpu_adapter.c_str());
   si.SetIntValue("GPU", "ResolutionScale", static_cast<long>(gpu_resolution_scale));
-  si.SetIntValue("GPU", "ResolutionSoftScale", static_cast<long>(gpu_resolution_soft_scale));
   si.SetIntValue("GPU", "Multisamples", static_cast<long>(gpu_multisamples));
   si.SetBoolValue("GPU", "UseDebugDevice", gpu_use_debug_device);
   si.SetBoolValue("GPU", "PerSampleShading", gpu_per_sample_shading);
@@ -434,6 +429,7 @@ void Settings::Save(SettingsInterface& si) const
   si.SetIntValue("CDROM", "ReadaheadSectors", cdrom_readahead_sectors);
   si.SetBoolValue("CDROM", "RegionCheck", cdrom_region_check);
   si.SetBoolValue("CDROM", "LoadImageToRAM", cdrom_load_image_to_ram);
+  si.SetBoolValue("CDROM", "PreCacheCHD", cdrom_precache_chd);
   si.SetBoolValue("CDROM", "MuteCDAudio", cdrom_mute_cd_audio);
   si.SetIntValue("CDROM", "ReadSpeedup", cdrom_read_speedup);
   si.SetIntValue("CDROM", "SeekSpeedup", cdrom_seek_speedup);
@@ -664,13 +660,17 @@ const char* Settings::GetCPUFastmemModeDisplayName(CPUFastmemMode mode)
 static constexpr auto s_gpu_renderer_names = make_array(
 #ifdef _WIN32
   "D3D11",
+#ifdef USE_D3D12
   "D3D12",
+#endif
 #endif
   "Vulkan", "OpenGL", "Software");
 static constexpr auto s_gpu_renderer_display_names = make_array(
 #ifdef _WIN32
   TRANSLATABLE("GPURenderer", "Hardware (D3D11)"),
+#ifdef USE_D3D12
   TRANSLATABLE("GPURenderer", "Hardware (D3D12)"),
+#endif
 #endif
   TRANSLATABLE("GPURenderer", "Hardware (Vulkan)"), TRANSLATABLE("GPURenderer", "Hardware (OpenGL)"),
   TRANSLATABLE("GPURenderer", "Software"));

@@ -122,20 +122,6 @@ target_link_libraries(common PRIVATE glad stb Threads::Threads libchdr glslang v
 
 if(WIN32)
   target_sources(common PRIVATE
-    d3d12/context.cpp
-    d3d12/context.h
-    d3d12/descriptor_heap_manager.cpp
-    d3d12/descriptor_heap_manager.h
-    d3d12/shader_cache.cpp
-    d3d12/shader_cache.h
-    d3d12/staging_texture.cpp
-    d3d12/staging_texture.h
-    d3d12/stream_buffer.cpp
-    d3d12/stream_buffer.h
-    d3d12/texture.cpp
-    d3d12/texture.h
-    d3d12/util.cpp
-    d3d12/util.h
     d3d11/shader_cache.cpp
     d3d11/shader_cache.h
     d3d11/shader_compiler.cpp
@@ -148,18 +134,26 @@ if(WIN32)
     d3d11/texture.h
     windows_headers.h
   )
-  target_link_libraries(common PRIVATE d3dcompiler.lib)
-
-  if(NOT LIBRETRO)
+  if(USE_D3D12)
     target_sources(common PRIVATE
-      gl/context_wgl.cpp
-      gl/context_wgl.h
-      thirdparty/StackWalker.cpp
-      thirdparty/StackWalker.h
-      win32_progress_callback.cpp
-      win32_progress_callback.h
+      d3d12/context.cpp
+      d3d12/context.h
+      d3d12/descriptor_heap_manager.cpp
+      d3d12/descriptor_heap_manager.h
+      d3d12/shader_cache.cpp
+      d3d12/shader_cache.h
+      d3d12/staging_texture.cpp
+      d3d12/staging_texture.h
+      d3d12/stream_buffer.cpp
+      d3d12/stream_buffer.h
+      d3d12/texture.cpp
+      d3d12/texture.h
+      d3d12/util.cpp
+      d3d12/util.h
     )
   endif()
+  target_link_libraries(common PRIVATE d3dcompiler.lib)
+
 endif()
 
 if(ANDROID)
@@ -245,13 +239,6 @@ endif()
 if(APPLE)
   # Needed for Vulkan Swap Chain.
   target_link_libraries(common PRIVATE "objc")
-endif()
-
-if(APPLE AND NOT BUILD_LIBRETRO_CORE)
-  target_sources(common PRIVATE
-    gl/context_agl.mm
-    gl/context_agl.h
-  )
 endif()
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
